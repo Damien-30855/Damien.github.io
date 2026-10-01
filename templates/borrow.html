@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge %}
+{% set title = "ยืมอุปกรณ์" %}
+
+{% block content %}
+{% if record is none %}
+{# ---------- ไม่มีรายการค้าง: ฟอร์มจอง ---------- #}
+<section class="panel">
+  <h2>เลือกอุปกรณ์ที่จะยืม</h2>
+  <p class="hint">รับจอง จันทร์–ศุกร์ {{ BOOK_OPEN }}–{{ BOOK_CLOSE }} น. · คืนภายใน {{ DEADLINE }} น. วันเดียวกัน · ยืมได้ครั้งละ 1 ชิ้น<br>กรุณามารับอุปกรณ์ที่ห้องกีฬาภายใน {{ PICKUP_MINUTES }} นาทีหลังจอง มิฉะนั้นการจองจะถูกยกเลิก</p>
+
+  {% if reason %}
+    <div class="notice danger">ยังจองไม่ได้: {{ reason }}</div>
+  {% endif %}
+
+  <form method="post">
+    <div class="formgrid">
+      <div><label>ผู้ยืม</label><input value="{{ g.user.full_name() }}" disabled></div>
+      <div>
+        <label>อุปกรณ์</label>
+        <select required name="equipment_id">
+          <option value="">เลือกอุปกรณ์</option>
+          {# ชนิดที่หมดแสดง "(หมด)" และเลือกไม่ได้ #}
+          {% for item in equipment_list %}
+            <option value="{{ item.equipment_id }}"{% if not item.is_available() %} disabled{% endif %}>
+              {{ item.name }} {% if item.is_available() %}(เหลือ {{ item.available_quantity }} ชิ้น){% else %}(หมด){% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div class="actions"><button class="btn"{% if reason %} disabled{% endif %}>ยืนยันการจอง</button></div>
+  </form>
+</section>
+
+{% elif record.status == STATUS_PENDING %}
+{# ---------- 'รอยืนยัน': การ์ดการจอง (นักศึกษาเปิดหน้านี้ให้แอดมินดูตอนมารับ) ---------- #}
+<section class="panel bw-card">
+  {% if is_new %}
+    <div class="bw-fresh"><div class="done-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div><h2 class="done-h">จองสำเร็จ</h2></div>
+  {% endif %}
+  <p class="bw-title">การจองของคุณ</p>
+  <dl class="done-list"><dt>อุปกรณ์</dt><dd>{{ equipment.name }}</dd><dt>เวลาจอง</dt><dd>{{ record.booked_at | thai_datetime(plain=True) }}</dd><dt>มารับภายใน</dt><dd class="due">{{ record.pickup_deadline() | thai_time }}</dd><dt>สถานะ</dt><dd>{{ badge(record.status) }}</dd></dl>
+  <p class="done-note">กรุณามารับอุปกรณ์ที่ห้องกีฬา และแสดงหน้านี้ต่อเจ้าหน้าที่ หากไม่มารับภายในเวลา การจองจะถูกยกเลิก</p>
+  {# ยกเลิก 2 ขั้น: กดปุ่มแดงก่อน แล้วค่อยกด "ยืนยันยกเลิก" อีกครั้ง #}
+  <div class="cancel-zone">
+    <button type="button" class="btn dangerbtn cancel-link" onclick="this.hidden=true;this.nextElementSibling.hidden=false">ยกเลิกการจอง</button>
+    <div class="cancel-confirm" hidden>
+      <p>ยกเลิกการจอง{{ equipment.name }}ใช่ไหม? อุปกรณ์จะกลับไปให้คนอื่นยืมได้</p>
+      <form class="done-actions" method="post" action="{{ url_for('cancel_booking', record_id=record.record_id) }}">
+        <input type="hidden" name="back" value="borrow">
+        <button class="btn dangerbtn">ยืนยันยกเลิก</button>
+        <button type="button" class="btn alt" onclick="var z=this.closest('.cancel-zone');z.querySelector('.cancel-confirm').hidden=true;z.querySelector('.cancel-link').hidden=false">ไม่ยกเลิก</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+{% elif record.status == STATUS_BORROWED %}
+{# ---------- 'กำลังยืม': การ์ดอุปกรณ์ที่กำลังยืม (ไม่มีปุ่มยกเลิก) ---------- #}
+<section class="panel bw-card">
+  <p class="bw-title">อุปกรณ์ที่คุณกำลังยืม</p>
+  <dl class="done-list"><dt>อุปกรณ์</dt><dd>{{ equipment.name }}</dd><dt>เริ่มยืม</dt><dd>{{ record.start_time | thai_datetime(plain=True) }}</dd><dt>คืนภายใน</dt><dd class="due">{{ record.due_time() | thai_time }}</dd><dt>สถานะ</dt><dd>{{ badge(record.status) }}</dd></dl>
+  <p class="done-note">กรุณานำอุปกรณ์มาคืนที่ห้องกีฬาภายในเวลาที่กำหนด คืนแล้วจึงจะยืมรายการใหม่ได้</p>
+</section>
+
+{% else %}
+{# ---------- 'เกินกำหนด': การ์ดเดียวกัน แต่กำหนดคืนเป็นสีแดง ---------- #}
+<section class="panel bw-card">
+  <p class="bw-title">อุปกรณ์ที่คุณกำลังยืม</p>
+  <dl class="done-list"><dt>อุปกรณ์</dt><dd>{{ equipment.name }}</dd><dt>เริ่มยืม</dt><dd>{{ record.start_time | thai_datetime(plain=True) }}</dd><dt>กำหนดคืน</dt><dd class="late">{{ record.due_time() | thai_time }}</dd><dt>สถานะ</dt><dd>{{ badge(record.status) }}</dd></dl>
+  <p class="done-note"><b class="late">เลยเวลาคืนแล้ว</b> กรุณานำอุปกรณ์มาคืนที่ห้องกีฬาโดยเร็ว คืนแล้วจึงจะยืมรายการใหม่ได้</p>
+</section>
+{% endif %}
+{% endblock %}

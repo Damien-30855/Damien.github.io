@@ -1,0 +1,24 @@
+# เครื่องสำหรับ GitHub Codespaces: app = Python รันเว็บ, db = MariaDB (ตัวเดียวกับใน XAMPP)
+services:
+  app:
+    image: mcr.microsoft.com/devcontainers/python:3.12
+    volumes:
+      - ../..:/workspaces:cached
+    command: sleep infinity
+    network_mode: service:db      # ให้ app เรียกฐานข้อมูลผ่าน localhost:3306 ได้เหมือน XAMPP (ไม่ต้องแก้ config.py)
+    environment:
+      TZ: Asia/Bangkok            # เวลาไทย (ระบบเช็กเวลาทำการ)
+
+  db:
+    image: mariadb:10.6
+    restart: unless-stopped
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"   # root ไม่มีรหัสผ่าน เหมือน XAMPP
+      TZ: Asia/Bangkok
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      # สร้างฐานข้อมูล pnru_sport พร้อมข้อมูลตัวอย่างให้เอง (ทำครั้งแรกครั้งเดียว)
+      - ../pnru_sport_demo.sql:/docker-entrypoint-initdb.d/pnru_sport_demo.sql:ro
+
+volumes:
+  mariadb-data:

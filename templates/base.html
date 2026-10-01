@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+<title>PNRU Sport · {{ title }}</title>
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+{# แถบบนสำหรับมือถือ: ชื่อเว็บ + ปุ่ม ☰ เปิดเมนู (บนคอมจะซ่อนไว้ด้วย CSS) #}
+<header class="mbar"><div class="brand">PNRU <span>Sport</span></div><button type="button" class="mbtn" aria-label="เปิดเมนู" onclick="document.body.classList.toggle('menu-open')">☰</button></header>
+<div class="scrim" onclick="document.body.classList.remove('menu-open')"></div>
+
+{# ลิงก์เมนู 1 อัน (ไฮไลท์ถ้าเป็นหน้าปัจจุบัน) #}
+{% macro nav_link(endpoint, text, also='') %}
+  <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint or request.endpoint == also %} class="active"{% endif %}>{{ text }}</a>
+{% endmacro %}
+
+<aside class="side">
+  <div class="brand">PNRU <span>Sport</span></div>
+  <div class="sub">เมนูหลัก</div>
+  <nav class="nav">
+    {{ nav_link('dashboard', '◈ หน้าแรก') }}
+    {{ nav_link('equipment', '◉ รายการอุปกรณ์') }}
+    {% if role == 'student' %}
+      {{ nav_link('borrow', '↗ ยืมอุปกรณ์') }}
+      {{ nav_link('history', '◷ ประวัติการยืมของฉัน') }}
+    {% elif role == 'admin' %}
+      {{ nav_link('admin_pending', '✓ ยืนยันรับอุปกรณ์') }}
+      {{ nav_link('admin_active', '↺ ยืนยันคืนอุปกรณ์') }}
+      {{ nav_link('admin_records', '☰ รายการทั้งหมด') }}
+      {{ nav_link('admin_overdue', '⚠ รายการเกินกำหนด') }}
+      {{ nav_link('admin_reports', '▥ สรุปสถิติอุปกรณ์') }}
+      {{ nav_link('admin_members', '♙ ค้นหาสมาชิก', 'admin_member') }}
+    {% endif %}
+  </nav>
+  <div class="sub">บัญชี</div>
+  <nav class="nav">
+    {% if role == 'guest' %}
+      {{ nav_link('login', '↪ เข้าสู่ระบบ') }}
+      {{ nav_link('signup', '✚ สมัครสมาชิก') }}
+    {% else %}
+      <a href="{{ url_for('logout') }}">↪ ออกจากระบบ</a>
+    {% endif %}
+  </nav>
+</aside>
+
+<main class="main">
+  {# หัวข้อหน้า (h1) ตรงกับชื่อเมนูด้านซ้าย · หน้าเข้าสู่ระบบ/สมัครสมาชิกไม่มีส่วนนี้ (ใช้การ์ดแทน) #}
+  {% block top %}
+  <div class="top">
+    <div>
+      <h1>{{ title }}</h1>
+      {% block subtitle %}{% endblock %}
+    </div>
+  </div>
+  {% endblock %}
+
+  {% if fake_now %}
+    <div class="notice testmode">โหมดทดสอบ: เวลาจำลอง วัน{{ thai_day }} {{ current_time | thai_datetime(plain=True) }}</div>
+  {% endif %}
+
+  {% for category, message in get_flashed_messages(with_categories=true) %}
+    <div class="notice {{ category }}">{{ message }}</div>
+  {% endfor %}
+
+  {% block content %}{% endblock %}
+</main>
+
+</body>
+</html>

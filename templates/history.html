@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge %}
+{% set title = "ประวัติการยืมของฉัน" %}
+
+{% block content %}
+<section class="panel">
+  <h2>ประวัติการยืมของ {{ g.user.full_name() }}</h2>
+  <p class="hint">{{ g.user.student_id }} — แสดงหน้านี้ต่อเจ้าหน้าที่เมื่อมารับอุปกรณ์</p>
+  <table>
+    <tr><th>อุปกรณ์</th><th>เวลาจอง</th><th>เริ่มยืมจริง</th><th>คืนเมื่อ</th><th>สถานะ</th><th>ดำเนินการ</th></tr>
+    {% for record in records %}
+      <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        <td data-label="เวลาจอง">{{ record.booked_at | thai_datetime }}</td>
+        <td data-label="เริ่มยืมจริง"{% if record.start_time is none %} class="dash"{% endif %}>{{ record.start_time | thai_datetime }}</td>
+        <td data-label="คืนเมื่อ"{% if record.return_time is none %} class="dash"{% endif %}>{{ record.return_time | thai_datetime }}</td>
+        <td data-label="สถานะ" class="c-status">
+          {{ badge(record.status) }}
+          {% if record.status == STATUS_PENDING %}
+            <div class="hint">เหลือเวลายืนยัน {{ record.minutes_left(current_time) }} นาที</div>
+            <a class="detail-link" href="{{ url_for('borrow') }}">ดูรายละเอียด</a>
+          {% endif %}
+        </td>
+        {% if record.status == STATUS_PENDING %}
+          <td data-label="ดำเนินการ" class="c-act">
+            <form class="inline" method="post" action="{{ url_for('cancel_booking', record_id=record.record_id) }}"
+                  onsubmit="return confirm('ยืนยันยกเลิกการจอง {{ equipment_by_id[record.equipment_id].name }}?')">
+              <button class="btn dangerbtn">ยกเลิกการจอง</button>
+            </form>
+          </td>
+        {% else %}
+          <td data-label="ดำเนินการ" class="dash"></td>
+        {% endif %}
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="empty">ยังไม่มีประวัติการยืม</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

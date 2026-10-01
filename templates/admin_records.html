@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_cell, time_cell, search_bar, empty_row with context %}
+{% set title = "รายการทั้งหมด" %}
+
+{% block content %}
+<section class="panel">
+  <p class="hint">หากบันทึกผิด ให้ยกเลิกรายการแล้วให้นักศึกษาจองใหม่</p>
+  {{ search_bar(search, records|length, ['equipment', 'status'], equipment_list, all_statuses) }}
+  <table>
+    <tr><th>เลขที่</th><th>ผู้ยืม</th><th>อุปกรณ์</th><th>เวลาจอง</th><th>เริ่มยืม</th><th>คืนเมื่อ</th><th>ผู้ยืนยัน</th><th>สถานะ</th><th>ดำเนินการ</th></tr>
+    {% for record in records %}
+      {% set student = students_by_id[record.student_id] %}
+      <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+        {# เลขที่รายการ = record_id แสดง 4 หลัก เช่น 0006 #}
+        <td data-label="เลขที่" class="c-ref">{{ "%04d" % record.record_id }}</td>
+        <td data-label="ผู้ยืม">{{ student.full_name() }}<div class="hint">{{ student.student_id }}</div></td>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        {{ time_cell("เวลาจอง", record.booked_at) }}
+        {{ time_cell("เริ่มยืม", record.start_time) }}
+        {{ time_cell("คืนเมื่อ", record.return_time) }}
+        {% if record.admin_id %}
+          <td data-label="ผู้ยืนยัน">{{ admins_by_id[record.admin_id].name }}</td>
+        {% else %}
+          <td data-label="ผู้ยืนยัน" class="dash">-</td>
+        {% endif %}
+        {{ status_cell(record) }}
+        {% if record.can_cancel() %}
+          <td data-label="ดำเนินการ" class="c-act">
+            <form class="inline" method="post" action="{{ url_for('admin_cancel_record', record_id=record.record_id) }}"
+                  onsubmit="return confirm('ยืนยันยกเลิกรายการ #{{ record.record_id }}? อุปกรณ์จะกลับเข้าคลัง')">
+              <button class="btn dangerbtn">ยกเลิกรายการ</button>
+            </form>
+          </td>
+        {% else %}
+          <td data-label="ดำเนินการ" class="dash"></td>
+        {% endif %}
+      </tr>
+    {% else %}
+      {{ empty_row(search, 9, "ยังไม่มีรายการ") }}
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

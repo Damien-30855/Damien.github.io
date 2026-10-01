@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% set title = "รายการอุปกรณ์" %}
+
+{% block content %}
+<section class="panel">
+  {% if role == 'admin' %}<p class="hint">กด − / + เพื่อปรับจำนวนอุปกรณ์</p>{% endif %}
+  <table>
+    {# ทุกคนเห็นจำนวน ทั้งหมด / พร้อมใช้ · แอดมินมีคอลัมน์ปุ่ม − / + เพิ่ม #}
+    <tr><th>อุปกรณ์</th><th>ทั้งหมด</th><th>พร้อมใช้</th>{% if role == 'admin' %}<th>จัดการจำนวน</th>{% endif %}</tr>
+    {% for item in equipment_list %}
+      <tr>
+        <td data-label="อุปกรณ์"><b>{{ item.name }}</b></td>
+        <td data-label="ทั้งหมด">{{ item.total_quantity }}</td>
+        <td data-label="พร้อมใช้">{{ item.available_quantity }}</td>
+        {% if role == 'admin' %}
+          <td data-label="จัดการจำนวน" class="c-act">
+            <form class="qty" method="post" action="{{ url_for('admin_update_quantity', equipment_id=item.equipment_id) }}">
+              <button name="step" value="-1" title="ลด 1">−</button>
+              <button name="step" value="1" title="เพิ่ม 1">+</button>
+            </form>
+          </td>
+        {% endif %}
+      </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge, time_cell, return_buttons, search_bar, empty_row with context %}
+{% set title = "ยืนยันคืนอุปกรณ์" %}
+
+{% block content %}
+<section class="panel">
+  <p class="hint">กำหนดคืนภายใน {{ DEADLINE }} น. · คืน-ปกติ: อุปกรณ์กลับเข้าคลัง · คืน-ชำรุด: ตัดออกจากคลัง</p>
+  {{ search_bar(search, records|length, ['equipment'], equipment_list) }}
+  <table>
+    <tr><th>ผู้ยืม</th><th>รหัสนักศึกษา</th><th>เบอร์โทร</th><th>อุปกรณ์</th><th>เริ่มยืม</th><th>สถานะ</th><th>ดำเนินการ</th></tr>
+    {% for record in records %}
+      {% set student = students_by_id[record.student_id] %}
+      <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+        <td data-label="ผู้ยืม">{{ student.full_name() }}</td>
+        <td data-label="รหัสนักศึกษา">{{ student.student_id }}</td>
+        <td data-label="เบอร์โทร">{{ student.phone }}</td>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        {{ time_cell("เริ่มยืม", record.start_time) }}
+        <td data-label="สถานะ" class="c-status">{{ badge(record.status) }}</td>
+        <td data-label="ดำเนินการ" class="c-act">{{ return_buttons(record, 'active') }}</td>
+      </tr>
+    {% else %}
+      {{ empty_row(search, 7, "ไม่มีรายการที่กำลังยืม") }}
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

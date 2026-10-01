@@ -1,0 +1,18 @@
+{
+  // ตั้งค่า GitHub Codespaces: เปิด Codespace แล้วจะได้ Python + MariaDB (เหมือน XAMPP) พร้อมข้อมูลตัวอย่าง และเว็บรันให้อัตโนมัติ
+  "name": "PNRU Sport",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "forwardPorts": [5000],
+  "portsAttributes": {
+    "5000": { "label": "PNRU Sport", "onAutoForward": "openBrowser" }
+  },
+  "customizations": {
+    "vscode": { "extensions": ["ms-python.python"] }
+  },
+  // ติดตั้ง flask, pymysql ครั้งแรกที่สร้าง Codespace
+  "postCreateCommand": "pip install --user -r requirements.txt",
+  // ทุกครั้งที่เปิด Codespace: รอฐานข้อมูลพร้อม แล้วรันเว็บ
+  "postAttachCommand": "until python -c \"import pymysql; pymysql.connect(host='127.0.0.1', user='root', database='pnru_sport')\" 2>/dev/null; do echo 'รอฐานข้อมูล...'; sleep 2; done; python app.py"
+}

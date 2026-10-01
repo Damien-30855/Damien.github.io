@@ -1,0 +1,66 @@
+{# ส่วนที่ใช้ซ้ำหลายหน้า #}
+
+{# ป้ายสถานะ สีตามสถานะ #}
+{% macro badge(status) %}<span class="badge b-{{ status }}">{{ status }}</span>{% endmacro %}
+
+{# ช่องสถานะในตาราง: ป้ายสถานะ + "เหลือเวลายืนยัน X นาที" ถ้ายัง 'รอยืนยัน'
+   (หน้าที่ใช้ต้อง import แบบ with context เพื่อให้เห็น STATUS_PENDING และ current_time) #}
+{% macro status_cell(record) %}
+  <td data-label="สถานะ" class="c-status">{{ badge(record.status) }}
+    {% if record.status == STATUS_PENDING %}<div class="hint">เหลือเวลายืนยัน {{ record.minutes_left(current_time) }} นาที</div>{% endif %}</td>
+{% endmacro %}
+
+{# ช่องวันเวลาในตาราง (ถ้าไม่มีค่า แสดง "-" และซ่อนบนมือถือด้วย class dash) #}
+{% macro time_cell(label, value) %}
+  <td data-label="{{ label }}"{% if value is none %} class="dash"{% endif %}>{{ value | thai_datetime }}</td>
+{% endmacro %}
+
+{# แถบค้นหา/กรองรายการ (ฝั่งแอดมิน) — ฟอร์ม GET ธรรมดา ไม่ใช้ JavaScript
+   fields = ช่องที่หน้านั้นมี: 'equipment' และ/หรือ 'status' (ช่องชื่อ/รหัสมีทุกหน้า)
+   ค่าที่ค้นค้างอยู่ในช่องเพราะส่ง search (จาก read_search_filters() ใน app.py) กลับมาด้วย #}
+{% macro search_bar(search, count, fields=[], equipment_list=[], all_statuses=[]) %}
+  <form method="get" class="search-bar">
+    <div class="search-fields">
+      <div><label for="s-q">ค้นหาชื่อหรือรหัสนักศึกษา</label>
+        <input id="s-q" name="q" value="{{ search.q }}" placeholder="เช่น ธนกฤต หรือ 6512345678901"></div>
+      {% if 'equipment' in fields %}
+        <div><label for="s-eq">อุปกรณ์</label>
+          <select id="s-eq" name="equipment_id">
+            <option value="">ทุกอุปกรณ์</option>
+            {% for item in equipment_list %}
+              <option value="{{ item.equipment_id }}"{% if search.equipment_id == item.equipment_id %} selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select></div>
+      {% endif %}
+      {% if 'status' in fields %}
+        <div><label for="s-st">สถานะ</label>
+          <select id="s-st" name="status">
+            <option value="">ทุกสถานะ</option>
+            {% for status in all_statuses %}
+              <option{% if search.status == status %} selected{% endif %}>{{ status }}</option>
+            {% endfor %}
+          </select></div>
+      {% endif %}
+    </div>
+    <div class="search-actions">
+      <button class="btn">ค้นหา</button>
+      {% if search.active %}<a class="btn alt" href="{{ url_for(request.endpoint) }}">ล้างการค้นหา</a>{% endif %}
+    </div>
+  </form>
+  {% if search.active %}<p class="hint search-count">พบ {{ count }} รายการ</p>{% endif %}
+{% endmacro %}
+
+{# ข้อความเมื่อตารางว่าง: ถ้ากำลังค้นหาแล้วไม่เจอ ใช้ข้อความของการค้นหา #}
+{% macro empty_row(search, cols, normal_text) %}
+  <tr><td colspan="{{ cols }}" class="empty">{% if search.active %}ไม่พบรายการที่ตรงกับการค้นหา{% else %}{{ normal_text }}{% endif %}</td></tr>
+{% endmacro %}
+
+{# ปุ่มยืนยันคืน-ปกติ / ยืนยันคืน-ชำรุด (back = หน้าที่จะกลับไปหลังกด) #}
+{% macro return_buttons(record, back) %}
+  <form class="inline" method="post" action="{{ url_for('admin_confirm_return', record_id=record.record_id) }}">
+    <input type="hidden" name="back" value="{{ back }}">
+    <button class="btn okbtn" name="damaged" value="0">ยืนยันคืน-ปกติ</button>
+    <button class="btn dangerbtn" name="damaged" value="1"
+            onclick="return confirm('ยืนยันคืน-ชำรุด? อุปกรณ์ชิ้นนี้จะไม่กลับเข้าคลัง')">ยืนยันคืน-ชำรุด</button>
+  </form>
+{% endmacro %}

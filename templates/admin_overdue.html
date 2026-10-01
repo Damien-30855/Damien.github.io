@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge, return_buttons, search_bar, empty_row with context %}
+{% set title = "รายการเกินกำหนด" %}
+
+{% block content %}
+<section class="panel">
+  <p class="hint">รายการที่เลยเวลาคืน {{ DEADLINE }} น. · นักศึกษายืมใหม่ได้หลังคืนอุปกรณ์</p>
+  {{ search_bar(search, records|length, ['equipment'], equipment_list) }}
+  <table>
+    <tr><th>ผู้ยืม</th><th>รหัสนักศึกษา</th><th>เบอร์โทร</th><th>อุปกรณ์</th><th>สถานะ</th><th>ดำเนินการ</th></tr>
+    {% for record in records %}
+      {% set student = students_by_id[record.student_id] %}
+      {# ไม่มี Push Notification/SMS จึงไฮไลท์ทุกแถวสีแดงแทน #}
+      <tr class="alert">
+        <td data-label="ผู้ยืม">{{ student.full_name() }}</td>
+        <td data-label="รหัสนักศึกษา">{{ student.student_id }}</td>
+        <td data-label="เบอร์โทร">{{ student.phone }}</td>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        <td data-label="สถานะ" class="c-status">{{ badge(record.status) }}</td>
+        <td data-label="ดำเนินการ" class="c-act">{{ return_buttons(record, 'overdue') }}</td>
+      </tr>
+    {% else %}
+      {{ empty_row(search, 6, "ไม่มีรายการเกินกำหนด") }}
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

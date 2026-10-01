@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% set title = "เกิดข้อผิดพลาด" %}
+
+{% block content %}
+<section class="panel" style="max-width:640px">
+  <h2>{{ message }}</h2>
+  <div class="actions" style="text-align:left"><a class="btn alt" href="{{ url_for('dashboard') }}">กลับหน้าแรก</a></div>
+</section>
+{% endblock %}

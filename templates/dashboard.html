@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "macros.html" import badge %}
+{% set title = "หน้าแรก" %}
+
+{% block subtitle %}<p>ห้องอุปกรณ์กีฬามหาวิทยาลัยราชภัฏพระนครเปิดให้บริการ จันทร์–ศุกร์ 09:00–16:00 น.</p>{% endblock %}
+
+{% block content %}
+<section class="cards">
+  <div class="card"><div class="label">อุปกรณ์ทั้งหมด</div><div class="num">{{ total_equipment }}</div></div>
+  <div class="card"><div class="label">กำลังยืม</div><div class="num">{{ borrowed_count }}</div></div>
+  <div class="card"><div class="label">คืนแล้วทั้งหมด</div><div class="num">{{ returned_count }}</div></div>
+  <div class="card"><div class="label">ชนิดอุปกรณ์</div><div class="num">{{ equipment_types }}</div></div>
+</section>
+
+<section class="panel">
+  <div class="head">
+    <h2>รายการล่าสุด</h2>
+    {% if role == 'guest' %}
+      <a class="btn" href="{{ url_for('login') }}">เข้าสู่ระบบ</a>
+    {% elif role == 'student' %}
+      <a class="btn" href="{{ url_for('borrow') }}">ยืมอุปกรณ์</a>
+    {% endif %}
+  </div>
+  <table>
+    <tr><th>อุปกรณ์</th><th>ผู้ยืม</th><th>เวลาที่ยืม</th><th>สถานะ</th></tr>
+    {% for record in records %}
+      {% set student = students_by_id[record.student_id] %}
+      <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        {# แอดมินเห็นชื่อเต็ม · Guest/นักศึกษาเห็นชื่อย่อนามสกุล #}
+        <td data-label="ผู้ยืม">{% if role == 'admin' %}{{ student.full_name() }}{% else %}{{ student.short_name() }}{% endif %}</td>
+        <td data-label="เวลาที่ยืม">{{ (record.start_time or record.booked_at) | thai_datetime }}</td>
+        <td data-label="สถานะ" class="c-status">{{ badge(record.status) }}
+          {% if record.status == STATUS_PENDING %}<div class="hint">เหลือเวลายืนยัน {{ record.minutes_left(current_time) }} นาที</div>{% endif %}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="4" class="empty">ยังไม่มีรายการ</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

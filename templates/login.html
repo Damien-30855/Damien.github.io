@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% set title = "เข้าสู่ระบบ" %}
+
+{% block top %}{% endblock %}
+
+{% block content %}
+<section class="panel login-card">
+  <h1>เข้าสู่ระบบ</h1>
+  <p class="login-sub">กรอกรหัสนักศึกษาและรหัสผ่านของคุณ</p>
+  {# ช่องเดียว: แอดมินพิมพ์ username ในช่องนี้ได้ (app.py เช็คตาราง admins ก่อน) #}
+  <form method="post" class="login">
+    <div><label for="login-user">รหัสนักศึกษา</label>
+      <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="M6 16c.8-1.5 2-2 3-2s2.2.5 3 2M14 10h4M14 13h3"/></svg><input required id="login-user" name="username" placeholder="เช่น 6512345678901" value="{{ username }}"></div></div>
+    <div><label for="login-pass">รหัสผ่าน</label>
+      <div class="ifield"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><input required id="login-pass" type="password" name="password" placeholder="รหัสผ่าน"><button type="button" class="eye" aria-label="แสดงรหัสผ่าน" onclick="var p=document.getElementById('login-pass');p.type=p.type==='password'?'text':'password'"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg></button></div></div>
+    <button class="btn btn-block"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 17l5-5-5-5M15 12H3M14 4h5a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1h-5"/></svg>เข้าสู่ระบบ</button>
+  </form>
+  <p class="hint login-alt">ยังไม่มีบัญชี? <a href="{{ url_for('signup') }}">สมัครสมาชิก</a></p>
+</section>
+{% endblock %}

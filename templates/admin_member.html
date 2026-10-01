@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% from "macros.html" import status_cell, time_cell with context %}
+{% set title = "ข้อมูลสมาชิก" %}
+
+{% block content %}
+<section class="panel">
+  <div class="head">
+    <h2>ประวัติการยืมของ {{ student.full_name() }}</h2>
+    <a class="btn alt" href="{{ url_for('admin_members') }}">กลับไปค้นหาสมาชิก</a>
+  </div>
+  <p class="hint">{{ student.student_id }} · โทร {{ student.phone }} · {{ student.email }}</p>
+
+  {# รีเซ็ตรหัสผ่าน: นักศึกษาลืมรหัส มาติดต่อที่ห้องกีฬา -> แอดมินตั้งรหัสใหม่ให้ (Admin.reset_password) #}
+  <div class="reset-zone">
+    <button type="button" class="btn alt reset-link" onclick="this.hidden=true;this.nextElementSibling.hidden=false">รีเซ็ตรหัสผ่าน</button>
+    <form class="reset-form" method="post" action="{{ url_for('admin_reset_password', student_id=student.student_id) }}" hidden>
+      <p class="reset-title">ตั้งรหัสผ่านใหม่ให้ {{ student.full_name() }}</p>
+      <div class="formgrid">
+        <div><label for="rs-pass">รหัสผ่านใหม่ <span class="req">*</span></label>
+          <input required id="rs-pass" type="password" name="new_password" minlength="6" placeholder="อย่างน้อย 6 ตัวอักษร"></div>
+        <div><label for="rs-pass2">ยืนยันรหัสผ่านใหม่ <span class="req">*</span></label>
+          <input required id="rs-pass2" type="password" name="confirm_password" minlength="6" placeholder="กรอกรหัสผ่านอีกครั้ง"></div>
+      </div>
+      <div class="reset-actions">
+        <button class="btn">บันทึกรหัสผ่านใหม่</button>
+        <button type="button" class="btn alt" onclick="var z=this.closest('.reset-zone');var f=z.querySelector('.reset-form');f.reset();f.hidden=true;z.querySelector('.reset-link').hidden=false">ยกเลิก</button>
+      </div>
+    </form>
+  </div>
+
+  <table>
+    <tr><th>เลขที่</th><th>อุปกรณ์</th><th>เวลาจอง</th><th>เริ่มยืม</th><th>คืนเมื่อ</th><th>สถานะ</th></tr>
+    {% for record in records %}
+      <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+        <td data-label="เลขที่" class="c-ref">{{ "%04d" % record.record_id }}</td>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        {{ time_cell("เวลาจอง", record.booked_at) }}
+        {{ time_cell("เริ่มยืม", record.start_time) }}
+        {{ time_cell("คืนเมื่อ", record.return_time) }}
+        {{ status_cell(record) }}
+      </tr>
+    {% else %}
+      <tr><td colspan="6" class="empty">ยังไม่มีประวัติการยืม</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

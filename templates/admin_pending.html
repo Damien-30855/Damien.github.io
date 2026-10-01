@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% from "macros.html" import time_cell, search_bar, empty_row with context %}
+{% set title = "ยืนยันรับอุปกรณ์" %}
+
+{% block content %}
+<section class="panel">
+  <p class="hint">ตรวจรายการกับหน้าประวัติของนักศึกษา แล้วกดยืนยันรับอุปกรณ์ภายใน {{ PICKUP_MINUTES }} นาทีนับจากเวลาจอง</p>
+  {{ search_bar(search, records|length) }}
+  <table>
+    <tr><th>ผู้ยืม</th><th>รหัสนักศึกษา</th><th>เบอร์โทร</th><th>อุปกรณ์</th><th>เวลาจอง</th><th>เหลือเวลา</th><th>ดำเนินการ</th></tr>
+    {% for record in records %}
+      {% set student = students_by_id[record.student_id] %}
+      <tr>
+        <td data-label="ผู้ยืม">{{ student.full_name() }}</td>
+        <td data-label="รหัสนักศึกษา">{{ student.student_id }}</td>
+        <td data-label="เบอร์โทร">{{ student.phone }}</td>
+        <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+        {{ time_cell("เวลาจอง", record.booked_at) }}
+        <td data-label="เหลือเวลา">{{ record.minutes_left(current_time) }} นาที</td>
+        <td data-label="ดำเนินการ" class="c-act">
+          <form class="inline" method="post" action="{{ url_for('admin_confirm_pickup', record_id=record.record_id) }}">
+            <button class="btn okbtn">ยืนยันรับอุปกรณ์</button>
+          </form>
+        </td>
+      </tr>
+    {% else %}
+      {{ empty_row(search, 7, "ไม่มีรายการรอยืนยัน") }}
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}
