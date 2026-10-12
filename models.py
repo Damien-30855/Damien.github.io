@@ -96,21 +96,26 @@ class Student:
         """รหัสผ่านถูกต้องหรือไม่ (เทียบกับ hash ที่เก็บไว้)"""
         return check_password_hash(self.password, password)
 
-    def has_active_record(self, records):
-        """มีรายการ 'รอยืนยัน' / 'กำลังยืม' / 'เกินกำหนด' ของตัวเองอยู่หรือไม่ (กติกา: ห้ามจองซ้อน)"""
+    def active_records(self, records):
+        """รายการที่ยังค้างอยู่ทั้งหมดของตัวเอง ('รอยืนยัน' / 'กำลังยืม' / 'เกินกำหนด') -> [BorrowRecord]
+        ใช้ทั้งกติกา 'ห้ามจองซ้อน' และหน้าตรวจสอบสถานะที่แสดงคำร้องค้างของตัวเอง"""
+        active = []
         for record in records:
             if record.student_id == self.student_id and \
                     record.status in (STATUS_PENDING, STATUS_BORROWED, STATUS_OVERDUE):
-                return True
-        return False
+                active.append(record)
+        return active
+
+    def has_active_record(self, records):
+        """มีรายการ 'รอยืนยัน' / 'กำลังยืม' / 'เกินกำหนด' ของตัวเองอยู่หรือไม่ (กติกา: ห้ามจองซ้อน)"""
+        return len(self.active_records(records)) > 0
 
     def active_record(self, records):
         """รายการที่ยังค้างอยู่ของตัวเอง ('รอยืนยัน' / 'กำลังยืม' / 'เกินกำหนด') หรือ None
         ใช้เลือกว่าหน้ายืมอุปกรณ์จะแสดงฟอร์มจอง หรือการ์ดของรายการนั้น"""
-        for record in records:
-            if record.student_id == self.student_id and \
-                    record.status in (STATUS_PENDING, STATUS_BORROWED, STATUS_OVERDUE):
-                return record
+        active = self.active_records(records)
+        if len(active) > 0:
+            return active[0]
         return None
 
     def has_overdue_record(self, records):

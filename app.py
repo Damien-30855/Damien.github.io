@@ -5,6 +5,7 @@
 #   3) บันทึก + commit         4) redirect ไปหน้าที่เกี่ยวข้อง
 # ถ้าเมธอด raise ValueError -> rollback แล้วแสดงข้อความเป็นแถบสีแดง
 
+import re
 import secrets
 from datetime import datetime
 
@@ -277,6 +278,38 @@ def dashboard():
 def equipment():
     db = get_db()
     return render_template("equipment.html", equipment_list=db.get_all_equipment())
+
+
+@app.route("/track", methods=["GET", "POST"])
+def track():
+    """หน้าตรวจสอบสถานะด้วยตัวเอง (ไม่ต้องเข้าสู่ระบบ)
+    กรอกรหัสนักศึกษา + เบอร์โทรที่ใช้ตอนสมัคร ถ้าตรงกับข้อมูลในฐานข้อมูล
+    จึงแสดงคำร้องที่ยังค้างอยู่ของตัวเอง พร้อมจำนวนอุปกรณ์ที่ว่าง (ข้อมูลสาธารณะ)
+    ถ้าไม่ตรง ข้อความที่แสดงเหมือนกันทั้งกรณี 'ไม่มีรหัสนักศึกษานี้' และ 'เบอร์โทรผิด'
+    เพื่อไม่ให้เดาได้ว่ารหัสนักศึกษาหนึ่งมีอยู่ในระบบหรือไม่"""
+    db = get_db()
+    equipment_list = db.get_all_equipment()
+    equipment_by_id = {}
+    for equipment in equipment_list:
+        equipment_by_id[equipment.equipment_id] = equipment
+    student = None
+    records = []
+    error = None
+    student_id = ""
+    if request.method == "POST":
+        student_id = request.form.get("student_id", "").strip()
+        phone = request.form.get("phone", "")
+        found = db.get_student(student_id)
+        # เทียบเบอร์โทรเฉพาะตัวเลข เพราะผู้ใช้อาจพิมพ์ขีดหรือเว้นวรรคมาด้วย
+        if found is not None and (re.sub(r"[^0-9]", "", found.phone)
+                                  == re.sub(r"[^0-9]", "", phone)):
+            student = found
+            records = student.active_records(db.get_records(student_id=student.student_id))
+        else:
+            error = "ไม่พบข้อมูลที่ตรงกับรหัสนักศึกษาและเบอร์โทรนี้ กรุณาตรวจสอบและลองอีกครั้ง"
+    return render_template("track.html", student=student, records=records, error=error,
+                           student_id=student_id,
+                           equipment_list=equipment_list, equipment_by_id=equipment_by_id)
 
 
 @app.route("/login", methods=["GET", "POST"])

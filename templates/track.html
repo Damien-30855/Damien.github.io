@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% from "macros.html" import icon, status_cell with context %}
+{% set title = "ตรวจสอบสถานะคำร้อง" %}
+
+{% block subtitle %}<p>ตรวจสอบคำร้องที่ยังค้างอยู่ของตัวเองได้ทุกเวลา ไม่ต้องเข้าสู่ระบบ · ใช้รหัสนักศึกษาและเบอร์โทรที่ใช้ตอนสมัคร</p>{% endblock %}
+
+{% block content %}
+{% if error %}<div class="notice danger">{{ error }}</div>{% endif %}
+
+{# 1) ฟอร์มยืนยันตัวตนด้วยรหัสนักศึกษา + เบอร์โทร (ไม่ใช้รหัสผ่าน) #}
+<section class="panel">
+  <h2>กรอกรหัสนักศึกษาและเบอร์โทรเพื่อตรวจสอบ</h2>
+  <p class="hint">ข้อมูลต้องตรงกับที่แจ้งไว้ตอนสมัครสมาชิก ระบบจะแสดงเฉพาะคำร้องของคุณเท่านั้น</p>
+  <form method="post">
+    <div class="formgrid">
+      <div><label for="t-id">รหัสนักศึกษา <span class="req">*</span></label>
+        <input required id="t-id" name="student_id" maxlength="13" inputmode="numeric"
+               placeholder="เช่น 6512345678901" value="{{ student_id }}"></div>
+      <div><label for="t-phone">เบอร์โทรศัพท์ที่ใช้สมัคร <span class="req">*</span></label>
+        <input required id="t-phone" name="phone" maxlength="10" inputmode="tel"
+               placeholder="เช่น 0812345678"></div>
+    </div>
+    <div class="actions"><button class="btn p">{{ icon('search') }}ตรวจสอบสถานะ</button></div>
+  </form>
+</section>
+
+{# 2) ผลการตรวจสอบ: แสดงเมื่อรหัส+เบอร์โทรตรงกับข้อมูลในระบบแล้วเท่านั้น #}
+{% if student %}
+  <section class="panel">
+    <div class="head">
+      <h2>คำร้องที่ค้างอยู่ของคุณ</h2>
+      <span class="hint">{{ student.full_name() }} · {{ student.student_id }}</span>
+    </div>
+    {% if records %}
+      <table>
+        <tr><th>เลขที่คำร้อง</th><th>อุปกรณ์</th><th>เวลาจอง</th><th>กำหนด</th><th>สถานะ</th></tr>
+        {% for record in records %}
+          <tr{% if record.status == STATUS_OVERDUE %} class="alert"{% endif %}>
+            <td data-label="เลขที่คำร้อง" class="c-ref">{{ record.record_id }}</td>
+            <td data-label="อุปกรณ์">{{ equipment_by_id[record.equipment_id].name }}</td>
+            <td data-label="เวลาจอง">{{ record.booked_at | thai_datetime }}</td>
+            {% if record.status == STATUS_PENDING %}
+              <td data-label="กำหนด">มารับภายใน {{ record.pickup_deadline() | thai_time }}</td>
+            {% else %}
+              <td data-label="กำหนด">คืนภายใน {{ record.due_time() | thai_time }}</td>
+            {% endif %}
+            {{ status_cell(record) }}
+          </tr>
+        {% endfor %}
+      </table>
+      <p class="hint">แสดงเฉพาะรายการที่ยังค้างอยู่ · ต้องการดูประวัติทั้งหมดให้
+        <a href="{{ url_for('login') }}">เข้าสู่ระบบ</a></p>
+    {% else %}
+      <p class="empty">ขณะนี้ไม่มีคำร้องที่ค้างอยู่</p>
+    {% endif %}
+  </section>
+{% endif %}
+
+{# 3) จำนวนอุปกรณ์ที่ว่าง (ข้อมูลสาธารณะ แสดงทุกครั้งที่เปิดหน้า) #}
+<section class="panel flush">
+  <p class="hint">จำนวนอุปกรณ์ที่พร้อมให้ยืม ข้อมูล ณ {{ current_time | thai_datetime(plain=True) }}</p>
+  <table>
+    <tr><th>อุปกรณ์</th><th class="r">พร้อมใช้</th><th class="r">ทั้งหมด</th></tr>
+    {% for item in equipment_list %}
+      <tr>
+        <td data-label="อุปกรณ์"><span class="nm">{{ icon('ball') }}{{ item.name }}</span></td>
+        <td data-label="พร้อมใช้" class="r{% if item.available_quantity == 0 %} zero{% endif %}">{{ item.available_quantity }}</td>
+        <td data-label="ทั้งหมด" class="r">{{ item.total_quantity }}</td>
+      </tr>
+    {% else %}
+      <tr><td colspan="3" class="empty">ยังไม่มีข้อมูลอุปกรณ์</td></tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

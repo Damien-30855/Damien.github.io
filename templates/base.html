@@ -17,6 +17,7 @@
     <span class="lbl">เมนูหลัก</span>
     {{ nav_link('dashboard', 'หน้าแรก', 'home') }}
     {{ nav_link('equipment', 'รายการอุปกรณ์', 'list') }}
+    {% if role != 'admin' %}{{ nav_link('track', 'ตรวจสอบสถานะ', 'search') }}{% endif %}
     {% if role == 'student' %}
       {{ nav_link('borrow', 'ยืมอุปกรณ์', 'borrow') }}
       {{ nav_link('history', 'ประวัติการยืมของฉัน', 'history') }}
