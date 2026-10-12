@@ -1,0 +1,57 @@
+# docker-compose.base44.yml — สภาพแวดล้อมพรีวิว/พัฒนาใน Base44
+# (ไม่แทน .devcontainer/docker-compose.yml ที่ใช้กับ GitHub Codespaces)
+#
+# โครงเดียวกับ .devcontainer: app ใช้ network namespace ร่วมกับ db
+#   -> ในคอนเทนเนอร์ app, "localhost" คือคอนเทนเนอร์ db
+#   -> config.py ใช้ DB_HOST="localhost" / user root / รหัสว่าง ได้เหมือน XAMPP ไม่ต้องแก้โค้ด
+#   -> พอร์ตเว็บ (5000 ของ app) จึงประกาศที่ service db (เจ้าของ network) แมปออกเป็น 3000
+#
+# รัน:  docker compose -f docker-compose.base44.yml up -d --build
+# เปิด:  http://localhost:3000
+services:
+  db:
+    image: mariadb:10.6
+    restart: on-failure
+    ports:
+      - "3000:5000"                   # เว็บ Flask ของ app (แชร์ network กับ db)
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"   # root รหัสว่าง เหมือน XAMPP
+      TZ: Asia/Bangkok                # ระบบเช็กเวลาทำการ/กำหนดคืนตามเวลาไทย
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      # สร้างฐานข้อมูล pnru_sport + ข้อมูลตัวอย่างให้อัตโนมัติครั้งแรกที่สร้าง volume
+      - ./pnru_sport_demo.sql:/docker-entrypoint-initdb.d/pnru_sport_demo.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -uroot --silent"]
+      interval: 5s
+      timeout: 4s
+      retries: 30
+      start_period: 20s
+
+  app:
+    image: python:3.12-slim
+    restart: on-failure
+    network_mode: service:db
+    working_dir: /app
+    volumes:
+      - .:/app                          # แก้โค้ดบนเครื่องแล้วเห็นทันที ไม่ต้อง build ใหม่
+    environment:
+      TZ: Asia/Bangkok
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      db:
+        condition: service_healthy
+    # ติดตั้งไลบรารีจาก requirements.txt ทุกครั้งที่สตาร์ท แล้วรันโหมดพัฒนา (reloader)
+    # --debug ของ flask CLI = รีสตาร์ทเองเมื่อแก้โค้ด (ไม่แก้ config.DEBUG ของโปรเจกต์ ค่ายังเป็น False)
+    command: >
+      sh -ec "pip install --no-cache-dir -q -r requirements.txt &&
+              exec flask --app app run --debug --host 0.0.0.0 --port 5000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request;urllib.request.urlopen('http://127.0.0.1:5000/login', timeout=5)\""]
+      interval: 10s
+      timeout: 8s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  mariadb-data:

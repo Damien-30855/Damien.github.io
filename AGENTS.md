@@ -1,0 +1,24 @@
+# AGENTS.md — PNRU Sport (Flask + MySQL/MariaDB)
+
+สรุปเฉพาะเรื่องที่อ่านจากโค้ดแล้วไม่รู้ (รายละเอียดงานระบบดู README.md · ตารางทดสอบมือดู TESTING.md)
+
+## รันในแซนด์บ็อกซ์ Base44
+
+```
+docker compose -f docker-compose.base44.yml up -d --build     # http://localhost:3000
+docker compose -f docker-compose.base44.yml logs app --tail 30
+```
+
+- **ไม่มี compose ของโปรเจกต์ที่รันแอปนี้ได้** (`.devcontainer/docker-compose.yml` มีไว้สำหรับ GitHub Codespaces เท่านั้น) ไฟล์ `docker-compose.base44.yml` เป็นชุดที่ใช้พรีวิว/พัฒนาในแซนด์บ็อกซ์
+- service `app` ใช้ `network_mode: service:db` เหมือน `.devcontainer` → ในคอนเทนเนอร์ `localhost` คือคอนเทนเนอร์ `db` ทำให้ `config.py` (`DB_HOST="localhost"`, user `root`, รหัสว่าง) ใช้ได้เหมือน XAMPP **โดยไม่ต้องแก้โค้ดแอป** ผลคือ **พอร์ตเว็บ (3000→5000) ประกาศที่ service `db`** ไม่ใช่ `app`
+- ข้อมูลตัวอย่าง: volume `mariadb-data` จะ import `pnru_sport_demo.sql` ให้เองครั้งแรกที่สร้าง (บัญชี: แอดมิน `admin1`/`admin1234` · นักศึกษา `6512345678901`-`903`/`123456`) ข้อมูลตรงกับที่ TESTING.md อ้างถึง (อุปกรณ์ 33 / กำลังยืม 2 / คืนแล้ว 2 / 8 ชนิด)
+- เริ่มข้อมูลใหม่ทั้งหมด: `docker compose -f docker-compose.base44.yml down -v` แล้ว `up -d` (คำเตือน: ลบข้อมูลทั้งหมด)
+- `TZ=Asia/Bangkok` ที่ทั้ง `app` และ `db` **จำเป็น** เพราะ `models.py` ตัดสินเวลาทำการ (09:00-15:30), ครบกำหนดคืน (16:00) จากเวลาท้องถิ่น — ถ้าเป็น UTC ระบบจะคิดว่า "นอกเวลาทำการ"
+- แก้โค้ดแล้วเว็บรีสตาร์ทเอง: รันด้วย `flask --app app run --debug` (reloader ของ Flask CLI) จึงไม่ต้องตั้ง `config.DEBUG = True` — ค่าใน `config.py` ยังเป็น `False` ตามเดิมสำหรับโหมดพรีเซนต์ แก้ template มีผลทันทีไม่ต้องรีสตาร์ท
+- ไม่มี secret ภายนอกที่ต้องใช้ (ฐานข้อมูลรันใน compose) · `config.SECRET_KEY` ว่าง → กุญแจ session สุ่มใหม่ทุกครั้งที่รีสตาร์ท จึงต้อง login ใหม่หลังรีสตาร์ท (พฤติกรรมเดิมของโปรเจกต์)
+- ทดสอบตรรกะของ `models.py` โดยไม่ต้องมีฐานข้อมูล: `python test_models.py` (ในคอนเทนเนอร์: `docker compose -f docker-compose.base44.yml exec -T app python test_models.py`) — พิมพ์ "ผ่าน/ไม่ผ่าน" ไม่ใช่ pytest
+
+## ข้อควรระวังเวลาทดสอบด้วยมือ
+
+- `config.FAKE_NOW` ตั้งเวลาจำลองได้ แต่ต้องรีสตาร์ทเว็บหลังแก้ และรีสตาร์ทแล้ว session หาย (ต้อง login ใหม่)
+- การเปิดหน้าเว็บทุกครั้งจะอัปเดตสถานะอัตโนมัติ (`refresh_statuses`: จองเกิน 30 นาที → ยกเลิก, เลย 16:00 → เกินกำหนด) ข้อมูลตัวอย่างจึงเปลี่ยนได้เองหากรันตอนเวลาจริงไม่ตรงกับข้อมูล
