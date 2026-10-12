@@ -1,27 +1,63 @@
 {% extends "base.html" %}
+{% from "macros.html" import icon %}
 {% set title = "รายการอุปกรณ์" %}
 
 {% block content %}
-<section class="panel">
-  {% if role == 'admin' %}<p class="hint">กด − / + เพื่อปรับจำนวนอุปกรณ์</p>{% endif %}
-  <table>
-    {# ทุกคนเห็นจำนวน ทั้งหมด / พร้อมใช้ · แอดมินมีคอลัมน์ปุ่ม − / + เพิ่ม #}
-    <tr><th>อุปกรณ์</th><th>ทั้งหมด</th><th>พร้อมใช้</th>{% if role == 'admin' %}<th>จัดการจำนวน</th>{% endif %}</tr>
-    {% for item in equipment_list %}
-      <tr>
-        <td data-label="อุปกรณ์"><b>{{ item.name }}</b></td>
-        <td data-label="ทั้งหมด">{{ item.total_quantity }}</td>
-        <td data-label="พร้อมใช้">{{ item.available_quantity }}</td>
-        {% if role == 'admin' %}
-          <td data-label="จัดการจำนวน" class="c-act">
-            <form class="qty" method="post" action="{{ url_for('admin_update_quantity', equipment_id=item.equipment_id) }}">
-              <button name="step" value="-1" title="ลด 1">−</button>
-              <button name="step" value="1" title="เพิ่ม 1">+</button>
-            </form>
-          </td>
-        {% endif %}
-      </tr>
-    {% endfor %}
-  </table>
-</section>
+{# แถบตัวเลขสรุป คำนวณจากข้อมูลจริงใน equipment_list #}
+<div class="kpis">
+  <div class="k"><div class="ib">{{ icon('box') }}</div>
+    <div><div class="t">อุปกรณ์ทั้งหมด</div><div class="n">{{ equipment_list | sum(attribute='total_quantity') }}</div></div></div>
+  <div class="k"><div class="ib">{{ icon('check') }}</div>
+    <div><div class="t">พร้อมใช้</div><div class="n">{{ equipment_list | sum(attribute='available_quantity') }}</div></div></div>
+  <div class="k"><div class="ib">{{ icon('grid') }}</div>
+    <div><div class="t">ชนิดอุปกรณ์</div><div class="n">{{ equipment_list | length }}</div></div></div>
+</div>
+
+<div class="main">
+  <section class="panel flush">
+    {% if role == 'admin' %}<p class="hint">กด − / + เพื่อปรับจำนวนอุปกรณ์</p>{% endif %}
+    <table>
+      {# ทุกคนเห็นจำนวน ทั้งหมด / พร้อมใช้ · แอดมินมีคอลัมน์ปุ่ม − / + เพิ่ม #}
+      <tr><th>อุปกรณ์</th><th class="r">ทั้งหมด</th><th class="r">พร้อมใช้</th>{% if role == 'admin' %}<th class="r">จัดการจำนวน</th>{% endif %}</tr>
+      {% for item in equipment_list %}
+        <tr>
+          <td data-label="อุปกรณ์"><span class="nm">{{ icon('ball') }}{{ item.name }}</span></td>
+          <td data-label="ทั้งหมด" class="r">{{ item.total_quantity }}</td>
+          <td data-label="พร้อมใช้" class="r{% if item.available_quantity == 0 %} zero{% endif %}">{{ item.available_quantity }}</td>
+          {% if role == 'admin' %}
+            <td data-label="จัดการจำนวน" class="c-act">
+              <form class="qty" method="post" action="{{ url_for('admin_update_quantity', equipment_id=item.equipment_id) }}">
+                <button name="step" value="-1" title="ลด 1">−</button>
+                <button name="step" value="1" title="เพิ่ม 1">+</button>
+              </form>
+            </td>
+          {% endif %}
+        </tr>
+      {% endfor %}
+    </table>
+  </section>
+
+  <aside class="side">
+    <div class="info">
+      <h3>{{ icon('doc') }}หลักเกณฑ์การยืม</h3>
+      <p>ยืมได้เมื่อมีอุปกรณ์พร้อมใช้ ผู้ยืมต้องเข้าสู่ระบบก่อนทุกครั้ง มารับอุปกรณ์ภายใน {{ PICKUP_MINUTES }} นาทีหลังจอง และคืนภายใน {{ DEADLINE }} น.</p>
+    </div>
+    <div class="info l">
+      <h3>{{ icon('clock') }}เวลาทำการ</h3>
+      <p>รับจองวันจันทร์–ศุกร์ {{ BOOK_OPEN }}–{{ BOOK_CLOSE }} น. เปิดให้บริการถึง {{ DEADLINE }} น. (ปิดวันหยุดนักขัตฤกษ์) ติดต่อเจ้าหน้าที่ที่ห้องอุปกรณ์กีฬา</p>
+    </div>
+    <div class="btns">
+      {% if role == 'guest' %}
+        <a class="btn p" href="{{ url_for('login') }}">{{ icon('login') }}เข้าสู่ระบบ</a>
+        <a class="btn" href="{{ url_for('signup') }}">{{ icon('signup') }}สมัครสมาชิก</a>
+      {% elif role == 'student' %}
+        <a class="btn p" href="{{ url_for('borrow') }}">{{ icon('borrow') }}ยืมอุปกรณ์</a>
+        <a class="btn" href="{{ url_for('history') }}">{{ icon('history') }}ประวัติการยืมของฉัน</a>
+      {% else %}
+        <a class="btn p" href="{{ url_for('admin_pending') }}">{{ icon('check') }}ยืนยันรับอุปกรณ์</a>
+        <a class="btn" href="{{ url_for('admin_records') }}">{{ icon('records') }}รายการทั้งหมด</a>
+      {% endif %}
+    </div>
+  </aside>
+</div>
 {% endblock %}

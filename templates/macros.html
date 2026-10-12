@@ -1,5 +1,33 @@
 {# ส่วนที่ใช้ซ้ำหลายหน้า #}
 
+{# ไอคอนเส้นชุดเดียวทั้งเว็บ (SVG) — ใช้ class "ic" สีจะตามตัวอักษร (currentColor) #}
+{% macro icon(name) %}
+  <svg class="ic" viewBox="0 0 24 24" aria-hidden="true">{% if name == 'home' %}<path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/>
+    {%- elif name == 'list' %}<circle cx="12" cy="12" r="9"/><path d="M12 3v18M3 12h18"/>
+    {%- elif name == 'borrow' %}<path d="M7 17L17 7"/><path d="M9 7h8v8"/>
+    {%- elif name == 'history' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+    {%- elif name == 'check' %}<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>
+    {%- elif name == 'return' %}<path d="M20 11a8 8 0 0 0-13.7-5.7L4 8"/><path d="M4 4v4h4"/><path d="M4 13a8 8 0 0 0 13.7 5.7L20 16"/><path d="M20 20v-4h-4"/>
+    {%- elif name == 'records' %}<path d="M8 6h13M8 12h13M8 18h13"/><path d="M3.5 6h.01M3.5 12h.01M3.5 18h.01"/>
+    {%- elif name == 'alert' %}<path d="M12 4l9 16H3z"/><path d="M12 10v4M12 17h.01"/>
+    {%- elif name == 'chart' %}<path d="M4 20V10M10 20V4M16 20v-7"/><path d="M2 20h20"/>
+    {%- elif name == 'members' %}<circle cx="10" cy="8" r="4"/><path d="M3 20c1.3-3 4-4.6 7-4.6s5.7 1.6 7 4.6"/><path d="M17.5 15.5l3.5 3.5"/>
+    {%- elif name == 'login' %}<path d="M15 4h4v16h-4"/><path d="M10 8l4 4-4 4M14 12H3"/>
+    {%- elif name == 'logout' %}<path d="M9 4H5v16h4"/><path d="M16 8l-4 4 4 4"/><path d="M12 12h9"/>
+    {%- elif name == 'signup' %}<path d="M12 5v14M5 12h14"/>
+    {%- elif name == 'doc' %}<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/>
+    {%- elif name == 'clock' %}<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+    {%- elif name == 'box' %}<path d="M3 7l9-4 9 4-9 4-9-4z"/><path d="M3 7v10l9 4 9-4V7"/>
+    {%- elif name == 'grid' %}<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+    {%- elif name == 'ball' %}<circle cx="12" cy="12" r="9"/><path d="M12 8l3 2-1 4h-4l-1-4z"/>
+    {%- endif %}</svg>
+{% endmacro %}
+
+{# ลิงก์เมนูบนแถบด้านบน (ไฮไลต์ถ้าเป็นหน้าปัจจุบัน) #}
+{% macro nav_link(endpoint, text, ic, also='') %}
+  <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint or request.endpoint == also %} class="active"{% endif %}>{{ icon(ic) }}{{ text }}</a>
+{% endmacro %}
+
 {# ป้ายสถานะ สีตามสถานะ #}
 {% macro badge(status) %}<span class="badge b-{{ status }}">{{ status }}</span>{% endmacro %}
 

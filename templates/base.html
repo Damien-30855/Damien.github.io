@@ -8,46 +8,40 @@
 </head>
 <body>
 
-{# แถบบนสำหรับมือถือ: ชื่อเว็บ + ปุ่ม ☰ เปิดเมนู (บนคอมจะซ่อนไว้ด้วย CSS) #}
-<header class="mbar"><div class="brand">PNRU <span>Sport</span></div><button type="button" class="mbtn" aria-label="เปิดเมนู" onclick="document.body.classList.toggle('menu-open')">☰</button></header>
+{# แถบเมนูแนวนอนด้านบน: ชื่อเว็บซ้าย · เมนูขวา (บนมือถือย่อเหลือปุ่ม ☰) #}
+{% from "macros.html" import icon, nav_link with context %}
+<header class="nav">
+  <div class="brand">PNRU <span>Sport</span></div>
+  <button type="button" class="mbtn" aria-label="เปิดเมนู" onclick="document.body.classList.toggle('menu-open')">☰</button>
+  <nav class="menu">
+    <span class="lbl">เมนูหลัก</span>
+    {{ nav_link('dashboard', 'หน้าแรก', 'home') }}
+    {{ nav_link('equipment', 'รายการอุปกรณ์', 'list') }}
+    {% if role == 'student' %}
+      {{ nav_link('borrow', 'ยืมอุปกรณ์', 'borrow') }}
+      {{ nav_link('history', 'ประวัติการยืมของฉัน', 'history') }}
+    {% elif role == 'admin' %}
+      {{ nav_link('admin_pending', 'ยืนยันรับอุปกรณ์', 'check') }}
+      {{ nav_link('admin_active', 'ยืนยันคืนอุปกรณ์', 'return') }}
+      {{ nav_link('admin_records', 'รายการทั้งหมด', 'records') }}
+      {{ nav_link('admin_overdue', 'รายการเกินกำหนด', 'alert') }}
+      {{ nav_link('admin_reports', 'สรุปสถิติอุปกรณ์', 'chart') }}
+      {{ nav_link('admin_members', 'ค้นหาสมาชิก', 'members', 'admin_member') }}
+    {% endif %}
+    <div class="sep"></div>
+    <span class="lbl">บัญชี</span>
+    {% if role == 'guest' %}
+      {{ nav_link('login', 'เข้าสู่ระบบ', 'login') }}
+      {{ nav_link('signup', 'สมัครสมาชิก', 'signup') }}
+    {% else %}
+      <a href="{{ url_for('logout') }}">{{ icon('logout') }}ออกจากระบบ</a>
+    {% endif %}
+  </nav>
+</header>
 <div class="scrim" onclick="document.body.classList.remove('menu-open')"></div>
 
-{# ลิงก์เมนู 1 อัน (ไฮไลท์ถ้าเป็นหน้าปัจจุบัน) #}
-{% macro nav_link(endpoint, text, also='') %}
-  <a href="{{ url_for(endpoint) }}"{% if request.endpoint == endpoint or request.endpoint == also %} class="active"{% endif %}>{{ text }}</a>
-{% endmacro %}
-
-<aside class="side">
-  <div class="brand">PNRU <span>Sport</span></div>
-  <div class="sub">เมนูหลัก</div>
-  <nav class="nav">
-    {{ nav_link('dashboard', '◈ หน้าแรก') }}
-    {{ nav_link('equipment', '◉ รายการอุปกรณ์') }}
-    {% if role == 'student' %}
-      {{ nav_link('borrow', '↗ ยืมอุปกรณ์') }}
-      {{ nav_link('history', '◷ ประวัติการยืมของฉัน') }}
-    {% elif role == 'admin' %}
-      {{ nav_link('admin_pending', '✓ ยืนยันรับอุปกรณ์') }}
-      {{ nav_link('admin_active', '↺ ยืนยันคืนอุปกรณ์') }}
-      {{ nav_link('admin_records', '☰ รายการทั้งหมด') }}
-      {{ nav_link('admin_overdue', '⚠ รายการเกินกำหนด') }}
-      {{ nav_link('admin_reports', '▥ สรุปสถิติอุปกรณ์') }}
-      {{ nav_link('admin_members', '♙ ค้นหาสมาชิก', 'admin_member') }}
-    {% endif %}
-  </nav>
-  <div class="sub">บัญชี</div>
-  <nav class="nav">
-    {% if role == 'guest' %}
-      {{ nav_link('login', '↪ เข้าสู่ระบบ') }}
-      {{ nav_link('signup', '✚ สมัครสมาชิก') }}
-    {% else %}
-      <a href="{{ url_for('logout') }}">↪ ออกจากระบบ</a>
-    {% endif %}
-  </nav>
-</aside>
-
-<main class="main">
-  {# หัวข้อหน้า (h1) ตรงกับชื่อเมนูด้านซ้าย · หน้าเข้าสู่ระบบ/สมัครสมาชิกไม่มีส่วนนี้ (ใช้การ์ดแทน) #}
+<main class="wrap">
+  {# หัวข้อหน้า (h1) ตรงกับชื่อเมนูด้านบน · หน้าเข้าสู่ระบบ/สมัครสมาชิกไม่มีส่วนนี้ (ใช้การ์ดแทน) #}
   {% block top %}
   <div class="top">
     <div>
