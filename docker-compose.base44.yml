@@ -1,0 +1,69 @@
+# docker-compose.base44.yml — Base44 dev environment (PNRU Sport: Flask + MariaDB)
+#
+# Usage:
+#   docker compose -f docker-compose.base44.yml up -d --build
+#   then open http://localhost:3000
+#
+# Notes
+# - app.py talks to MySQL at 127.0.0.1:3306 with the XAMPP defaults in config.py
+#   (root, empty password, database pnru_sport). To keep config.py untouched, the
+#   web service shares the db service's network namespace — the same trick the
+#   repo's own .devcontainer/docker-compose.yml uses.
+# - Because of that shared namespace, the published port has to live on the db
+#   service (Docker refuses `ports:` on a service with network_mode: service:...):
+#   host 3000 -> the Flask dev server on 5000 inside that namespace.
+# - The database is seeded on first start from pnru_sport_demo.sql, exactly like
+#   `python init_db.py --demo`.
+
+services:
+  db:
+    image: mariadb:10.6
+    restart: on-failure
+    environment:
+      MARIADB_ALLOW_EMPTY_ROOT_PASSWORD: "1"   # root with no password, like XAMPP
+      MARIADB_ROOT_HOST: "%"
+      TZ: Asia/Bangkok                         # the app's booking rules use Thai time
+    volumes:
+      - mariadb-data:/var/lib/mysql
+      - ./pnru_sport_demo.sql:/docker-entrypoint-initdb.d/pnru_sport_demo.sql:ro
+    ports:
+      - "3000:5000"                            # the Flask dev server (see note above)
+    healthcheck:
+      test: ["CMD", "mariadb-admin", "ping", "-h", "127.0.0.1", "-uroot", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+
+  web:
+    image: python:3.12-slim
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+    network_mode: service:db
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      TZ: Asia/Bangkok
+      PYTHONUNBUFFERED: "1"
+      PYTHONDONTWRITEBYTECODE: "1"
+    # deps are unpinned and live in the image, so sync them from the mounted
+    # checkout on every start, then run the live-reloading dev server
+    command:
+      - sh
+      - -ec
+      - |
+        python -m pip install --no-cache-dir -q -r requirements.txt
+        exec python -m flask --app app run --debug --host 0.0.0.0 --port 5000
+    healthcheck:
+      # "/" needs a working database connection, so this checks app + db together
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5000/', timeout=4).status == 200 else 1)"]
+      interval: 10s
+      timeout: 6s
+      retries: 6
+      start_period: 45s
+
+volumes:
+  mariadb-data:
