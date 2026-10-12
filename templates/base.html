@@ -8,6 +8,10 @@
 </head>
 <body>
 
+{# พื้นหลังเคลื่อนไหว (แสงเรือง) — ตกแต่งล้วน ๆ ไม่มีผลกับเนื้อหาหรือการทำงาน #}
+<div class="bg" aria-hidden="true"><span class="aurora a1"></span><span class="aurora a2"></span><span class="aurora a3"></span></div>
+<div class="bg-glow" aria-hidden="true"></div>
+
 {# แถบบนสำหรับมือถือ: ชื่อเว็บ + ปุ่ม ☰ เปิดเมนู (บนคอมจะซ่อนไว้ด้วย CSS) #}
 <header class="mbar"><div class="brand">PNRU <span>Sport</span></div><button type="button" class="mbtn" aria-label="เปิดเมนู" onclick="document.body.classList.toggle('menu-open')">☰</button></header>
 <div class="scrim" onclick="document.body.classList.remove('menu-open')"></div>
@@ -67,6 +71,9 @@
 
   {% block content %}{% endblock %}
 </main>
+
+{# ลูกเล่นของหน้าเว็บ (แสงเรืองตามเมาส์ / ปุ่มขยับ / ตัวเลขวิ่งขึ้น / เนื้อหาโผล่ตอนเลื่อน) #}
+<script src="{{ url_for('static', filename='app.js') }}" defer></script>
 
 </body>
 </html>
